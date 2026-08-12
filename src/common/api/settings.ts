@@ -15,4 +15,9 @@ export interface TelemetrySettings {
    * Returns the telemetry level: value can be either "off", "all", "error" or "crash"
    */
   getTelemetryLevel(): string | undefined;
+
+  /**
+   * Writes the telemetry enabled preference for this pipeline.
+   */
+  updateTelemetryEnabledConfig(value: boolean): Thenable<void>;
 }
