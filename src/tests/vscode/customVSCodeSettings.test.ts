@@ -1,9 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CustomVSCodeSettings } from '../../common/vscode/settings';
 
 // ---------------------------------------------------------------------------
 // Mock the 'vscode' module
 // ---------------------------------------------------------------------------
+// vi.mock is hoisted, so mockEnv must be declared via vi.hoisted to be
+// accessible inside the factory.
+const mockEnv = vi.hoisted(() => ({ appName: 'Visual Studio Code' }));
+
 vi.mock('vscode', () => {
   const configStore: Record<string, Record<string, unknown>> = {};
 
@@ -47,7 +51,8 @@ vi.mock('vscode', () => {
       __setInspect,
       __reset,
     },
-    env: { appName: 'Visual Studio Code' },
+    // proxy so tests can mutate mockEnv fields at runtime
+    env: new Proxy(mockEnv, { get: (t, p) => t[p as keyof typeof t] }),
   };
 });
 
@@ -101,6 +106,42 @@ describe('CustomVSCodeSettings', () => {
     });
   });
 
+  describe('getTelemetryLevel()', () => {
+    afterEach(() => {
+      // restore appName after each test in this suite in case a test throws mid-way
+      mockEnv.appName = 'Visual Studio Code';
+    });
+
+    it('returns "all" for a standard VS Code client', () => {
+      expect(settings.getTelemetryLevel()).toBe('all');
+    });
+
+    it('returns "off" for a privacy-focused client (VS Codium)', () => {
+      mockEnv.appName = 'VSCodium';
+      expect(settings.getTelemetryLevel()).toBe('off');
+    });
+
+    it('returns "off" when telemetry.telemetryLevel is set to "off"', () => {
+      ws.__setConfig('', 'telemetry.telemetryLevel', 'off');
+      expect(settings.getTelemetryLevel()).toBe('off');
+    });
+
+    it('returns "error" when telemetry.telemetryLevel is set to "error"', () => {
+      ws.__setConfig('', 'telemetry.telemetryLevel', 'error');
+      expect(settings.getTelemetryLevel()).toBe('error');
+    });
+
+    it('returns "off" when legacy telemetry.enableTelemetry is false', () => {
+      ws.__setConfig('', 'telemetry.enableTelemetry', false);
+      expect(settings.getTelemetryLevel()).toBe('off');
+    });
+
+    it('returns "off" when legacy telemetry.enableCrashReporter is false', () => {
+      ws.__setConfig('', 'telemetry.enableCrashReporter', false);
+      expect(settings.getTelemetryLevel()).toBe('off');
+    });
+  });
+
   describe('isTelemetryConfigured()', () => {
     it('returns false when inspect returns all-undefined (never set)', () => {
       ws.__setInspect('', `${NS}.telemetry.enabled`, {
@@ -116,6 +157,31 @@ describe('CustomVSCodeSettings', () => {
 
     it('returns true when globalValue is set', () => {
       ws.__setInspect('', `${NS}.telemetry.enabled`, { globalValue: true });
+      expect(settings.isTelemetryConfigured()).toBe(true);
+    });
+
+    it('returns true when workspaceValue is set', () => {
+      ws.__setInspect('', `${NS}.telemetry.enabled`, { workspaceValue: false });
+      expect(settings.isTelemetryConfigured()).toBe(true);
+    });
+
+    it('returns true when workspaceFolderValue is set', () => {
+      ws.__setInspect('', `${NS}.telemetry.enabled`, { workspaceFolderValue: true });
+      expect(settings.isTelemetryConfigured()).toBe(true);
+    });
+
+    it('returns true when globalLanguageValue is set', () => {
+      ws.__setInspect('', `${NS}.telemetry.enabled`, { globalLanguageValue: true });
+      expect(settings.isTelemetryConfigured()).toBe(true);
+    });
+
+    it('returns true when workspaceLanguageValue is set', () => {
+      ws.__setInspect('', `${NS}.telemetry.enabled`, { workspaceLanguageValue: false });
+      expect(settings.isTelemetryConfigured()).toBe(true);
+    });
+
+    it('returns true when workspaceFolderLanguageValue is set', () => {
+      ws.__setInspect('', `${NS}.telemetry.enabled`, { workspaceFolderLanguageValue: false });
       expect(settings.isTelemetryConfigured()).toBe(true);
     });
   });
