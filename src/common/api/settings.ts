@@ -16,8 +16,6 @@ export interface TelemetrySettings {
    */
   getTelemetryLevel(): string | undefined;
 
-  /**
-   * Writes the telemetry enabled preference for this pipeline.
-   */
+  // Persists the opt-in/out choice to the correct VS Code configuration key for this pipeline.
   updateTelemetryEnabledConfig(value: boolean): Thenable<void>;
 }

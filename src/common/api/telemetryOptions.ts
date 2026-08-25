@@ -1,13 +1,4 @@
-/**
- * Optional configuration for `getRedHatService()` to use an independent telemetry pipeline.
- *
- * When `telemetryNamespace` is set, `<namespace>.telemetry.enabled` is used as the enablement
- * gate instead of `redhat.telemetry.enabled`. The two pipelines are completely independent.
- *
- * **Important:** the calling extension must declare `<namespace>.telemetry.enabled` as a boolean
- * in `package.json` `contributes.configuration`; omitting it causes VS Code to silently return
- * `undefined`, which defaults to `false` and permanently disables telemetry.
- */
+/** Optional configuration for `getRedHatService()` to use an independent telemetry pipeline. */
 export interface TelemetryOptions {
   /**
    * Namespace prefix for the custom VS Code setting. The library reads/writes

@@ -40,8 +40,7 @@ export class VSCodeSettings implements TelemetrySettings {
 
 /**
  * Settings implementation that reads/writes `<telemetryNamespace>.telemetry.enabled`
- * instead of `redhat.telemetry.enabled`. VS Code's global `telemetry.telemetryLevel`
- * is ignored — the custom namespace setting is the sole enablement gate.
+ * instead of `redhat.telemetry.enabled`.
  */
 export class CustomVSCodeSettings implements TelemetrySettings {
   private readonly configKey: string;

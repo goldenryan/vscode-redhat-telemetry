@@ -228,7 +228,7 @@ export async function activate(context: ExtensionContext) {
 |---|---|
 | `telemetryNamespace` provided | Library reads/writes `<namespace>.telemetry.enabled`; `redhat.telemetry.enabled` is ignored entirely for this pipeline |
 | `telemetryNamespace` omitted | All existing behavior is unchanged — `redhat.telemetry.enabled` is used as before |
-| VS Code global `telemetry.telemetryLevel = off` | Silences the custom pipeline regardless of the namespace setting |
+| VS Code global `telemetry.telemetryLevel = off` | Does **not** affect the custom pipeline. `<namespace>.telemetry.enabled` is the sole gate |
 | Opt-in dialog lock file | Stored as `<namespace>.optin.json` — independent from `redhat.optin.json` |
 | `optInMessage` omitted | Falls back to the default Red Hat opt-in message |
 | `privacyStatementUrl` / `optOutInstructionsUrl` omitted | Falls back to the Red Hat default URLs |
