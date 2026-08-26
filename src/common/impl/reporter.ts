@@ -1,5 +1,4 @@
 import type { CoreAnalytics } from '@segment/analytics-core';
-import { sha1 } from 'object-hash';
 import type { AnalyticsEvent } from '../api/analyticsEvent';
 import type { CacheService } from '../api/cacheService';
 import type { IReporter } from '../api/reporter';
@@ -12,6 +11,7 @@ export class Reporter implements IReporter {
   constructor(
     private analytics?: CoreAnalytics,
     private cacheService?: CacheService,
+    private writeKey?: string,
   ) {}
 
   public async report(event: AnalyticsEvent): Promise<void> {
@@ -22,16 +22,17 @@ export class Reporter implements IReporter {
     try {
       switch (event.type) {
         case 'identify': {
-          //Avoid identifying the user several times, until some data has changed.
-          const hash = sha1(payloadString);
-          const cached = await this.cacheService?.get('identify');
-          if (hash === cached) {
-            Logger.log(`Skipping 'identify' event! Already sent:\n${payloadString}`);
+          // Skip if we already sent an identify event today.
+          const identifyCacheName = this.getIdentifyCacheName();
+          const cachedDate = await this.cacheService?.get(identifyCacheName);
+          const today = new Date().toDateString();
+          if (cachedDate === today) {
+            Logger.log(`Skipping 'identify' event! Already sent today:\n${payloadString}`);
             return;
           }
           Logger.log(`Sending 'identify' event with\n${payloadString}`);
           await this.analytics?.identify(event);
-          this.cacheService?.put('identify', hash);
+          await this.cacheService?.put(identifyCacheName, today);
           break;
         }
         case 'track':
@@ -61,6 +62,11 @@ export class Reporter implements IReporter {
     if (isCloseAndFlusheable(this.analytics)) {
       return this.analytics.closeAndFlush();
     }
+  }
+
+  private getIdentifyCacheName(): string {
+    // Fall back to "identify" when no writeKey is set (backward compat).
+    return this.writeKey ? `${this.writeKey}-identify` : 'identify';
   }
 }
 
