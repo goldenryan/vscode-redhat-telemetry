@@ -95,9 +95,24 @@ describe('buildOptInMessage', () => {
     expect(msg).toBe('Custom message.');
   });
 
-  it('uses custom privacyStatementUrl in the default message', () => {
+  it('appends from= as a proper query parameter for a plain custom URL', () => {
     const msg = buildOptInMessage({ privacyStatementUrl: 'https://example.com/privacy' }, EXT_ID);
-    expect(msg).toContain('https://example.com/privacy');
+    expect(msg).toContain('https://example.com/privacy?from=my.extension');
+  });
+
+  it('appends from= without breaking an existing query string', () => {
+    const msg = buildOptInMessage({ privacyStatementUrl: 'https://example.com/privacy?locale=en' }, EXT_ID);
+    expect(msg).toContain('locale=en');
+    expect(msg).toContain('from=my.extension');
+    // 'from' must not be part of the locale value
+    expect(msg).not.toContain('locale=en?from');
+  });
+
+  it('appends from= without corrupting a URL that has a fragment', () => {
+    const msg = buildOptInMessage({ privacyStatementUrl: 'https://example.com/privacy#section' }, EXT_ID);
+    expect(msg).toContain('from=my.extension');
+    // fragment must stay at the end, after the query string
+    expect(msg).toMatch(/\?from=[^#]+#section/);
   });
 
   it('uses custom optOutInstructionsUrl in the default message', () => {

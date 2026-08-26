@@ -152,8 +152,10 @@ export function buildOptInMessage(options: TelemetryOptions | undefined, extensi
   }
   const privacyUrl = options?.privacyStatementUrl ?? PRIVACY_STATEMENT_URL;
   const optOutUrl = options?.optOutInstructionsUrl ?? OPT_OUT_INSTRUCTIONS_URL;
+  const privacyUrlWithFrom = new URL(privacyUrl);
+  privacyUrlWithFrom.searchParams.set('from', extensionId);
   return `Help Red Hat improve its extensions by allowing them to collect usage data.
-      Read our [privacy statement](${privacyUrl}?from=${extensionId})
+      Read our [privacy statement](${privacyUrlWithFrom.toString()})
     and learn how to [opt out](${optOutUrl}).`;
 }
 
