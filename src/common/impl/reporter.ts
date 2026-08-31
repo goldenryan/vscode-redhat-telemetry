@@ -1,4 +1,5 @@
 import type { CoreAnalytics } from '@segment/analytics-core';
+import { sha1 } from 'object-hash';
 import type { AnalyticsEvent } from '../api/analyticsEvent';
 import type { CacheService } from '../api/cacheService';
 import type { IReporter } from '../api/reporter';
@@ -8,6 +9,8 @@ import { Logger } from '../utils/logger';
  * Sends Telemetry events to a segment.io backend
  */
 export class Reporter implements IReporter {
+  private identifyInFlight: Promise<void> | undefined;
+
   constructor(
     private analytics?: CoreAnalytics,
     private cacheService?: CacheService,
@@ -24,15 +27,20 @@ export class Reporter implements IReporter {
         case 'identify': {
           // Skip if we already sent an identify event today.
           const identifyCacheName = this.getIdentifyCacheName();
-          const cachedDate = await this.cacheService?.get(identifyCacheName);
-          const today = new Date().toDateString();
-          if (cachedDate === today) {
-            Logger.log(`Skipping 'identify' event! Already sent today:\n${payloadString}`);
-            return;
-          }
-          Logger.log(`Sending 'identify' event with\n${payloadString}`);
-          await this.analytics?.identify(event);
-          await this.cacheService?.put(identifyCacheName, today);
+          this.identifyInFlight = (this.identifyInFlight ?? Promise.resolve())
+            .then(async () => {
+              const hash = sha1(payloadString);
+              const cached = await this.cacheService?.get(identifyCacheName);
+              if (hash === cached) {
+                Logger.log(`Skipping 'identify' event! Already sent:\n${payloadString}`);
+                return;
+              }
+              Logger.log(`Sending 'identify' event with\n${payloadString}`);
+              await this.analytics?.identify(event);
+              await this.cacheService?.put(identifyCacheName, hash);
+            })
+            .catch((e) => Logger.log(`Failed to send 'identify' event ${toErrorMessage(e)}`));
+          await this.identifyInFlight;
           break;
         }
         case 'track':

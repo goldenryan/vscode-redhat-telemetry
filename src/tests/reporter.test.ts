@@ -1,4 +1,5 @@
 import * as assert from 'node:assert';
+import { suite, test } from 'vitest';
 import type { AnalyticsEvent } from '../common/api/analyticsEvent';
 import type { CacheService } from '../common/api/cacheService';
 import { Reporter } from '../common/impl/reporter';
@@ -42,7 +43,7 @@ suite('Reporter identify caching', () => {
     assert.strictEqual(analytics.identifyCalls.length, 1);
   });
 
-  test('skips duplicate identify sent on the same day', async () => {
+  test('skips duplicate identify with identical payload', async () => {
     const analytics = new MockAnalytics();
     const cache = new MockCacheService();
     const reporter = new Reporter(analytics as any, cache, 'key-abc');
@@ -53,15 +54,14 @@ suite('Reporter identify caching', () => {
     assert.strictEqual(analytics.identifyCalls.length, 1);
   });
 
-  test('sends identify again after cache is cleared (new day simulation)', async () => {
+  test('resends identify when traits change', async () => {
     const analytics = new MockAnalytics();
     const cache = new MockCacheService();
     const reporter = new Reporter(analytics as any, cache, 'key-abc');
+    const updatedEvent: AnalyticsEvent = { type: 'identify', userId: 'user1', traits: { name: 'Updated' } } as any;
 
     await reporter.report(identifyEvent);
-    // Simulate a new day by overwriting the cached date with a stale value.
-    await cache.put('key-abc-identify', 'Mon Jan 01 2000');
-    await reporter.report(identifyEvent);
+    await reporter.report(updatedEvent);
 
     assert.strictEqual(analytics.identifyCalls.length, 2);
   });
