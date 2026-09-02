@@ -30,7 +30,7 @@ export abstract class AbstractRedHatServiceProvider {
   constructor(context: ExtensionContext, options?: TelemetryOptions) {
     this.options = options;
     this.settings = options?.telemetryNamespace
-      ? new CustomVSCodeSettings(options.telemetryNamespace)
+      ? new CustomVSCodeSettings(options.telemetryNamespace, options.ignoreGlobalTelemetryLevel)
       : new VSCodeSettings();
     this.context = context;
   }
@@ -147,15 +147,33 @@ export abstract class AbstractRedHatServiceProvider {
  * Uses custom text/URLs from `options` when provided; falls back to Red Hat defaults.
  */
 export function buildOptInMessage(options: TelemetryOptions | undefined, extensionId: string): string {
+  if (options?.telemetryNamespace && !options.optInMessage) {
+    throw new Error(
+      `TelemetryOptions.optInMessage is required when telemetryNamespace is set (namespace: "${options.telemetryNamespace}"). ` +
+        'The default opt-in message uses Red Hat branding, which is incorrect for third-party consumers.',
+    );
+  }
+
   if (options?.optInMessage) {
     return options.optInMessage;
   }
+
   const privacyUrl = options?.privacyStatementUrl ?? PRIVACY_STATEMENT_URL;
   const optOutUrl = options?.optOutInstructionsUrl ?? OPT_OUT_INSTRUCTIONS_URL;
-  const privacyUrlWithFrom = new URL(privacyUrl);
-  privacyUrlWithFrom.searchParams.set('from', extensionId);
+
+  let privacyUrlStr: string;
+  try {
+    const parsed = new URL(privacyUrl);
+    parsed.searchParams.set('from', extensionId);
+    privacyUrlStr = parsed.toString();
+  } catch {
+    // Relative or malformed URL — append query string manually.
+    const separator = privacyUrl.includes('?') ? '&' : '?';
+    privacyUrlStr = `${privacyUrl}${separator}from=${encodeURIComponent(extensionId)}`;
+  }
+
   return `Help Red Hat improve its extensions by allowing them to collect usage data.
-      Read our [privacy statement](${privacyUrlWithFrom.toString()})
+      Read our [privacy statement](${privacyUrlStr})
     and learn how to [opt out](${optOutUrl}).`;
 }
 

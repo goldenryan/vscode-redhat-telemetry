@@ -14,4 +14,10 @@ export interface TelemetryOptions {
 
   /** Overrides the opt-out instructions URL in the opt-in dialog. */
   optOutInstructionsUrl?: string;
+
+  /**
+   * When true, `CustomVSCodeSettings.isTelemetryEnabled()` skips the global
+   * `telemetry.telemetryLevel` check.
+   */
+  ignoreGlobalTelemetryLevel?: boolean;
 }

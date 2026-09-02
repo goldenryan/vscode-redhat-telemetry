@@ -87,11 +87,17 @@ describe('CustomVSCodeSettings', () => {
       expect(settings.isTelemetryEnabled()).toBe(false);
     });
 
-    it('returns true when namespace enabled=true even when global telemetryLevel is off', () => {
-      // global level must not affect the custom pipeline
+    it('returns false when global telemetryLevel is off (user opt-out must be honoured)', () => {
       ws.__setConfig('', 'telemetry.telemetryLevel', 'off');
       ws.__setConfig(`${NS}.telemetry`, 'enabled', true);
-      expect(settings.isTelemetryEnabled()).toBe(true);
+      expect(settings.isTelemetryEnabled()).toBe(false);
+    });
+
+    it('returns true when global telemetryLevel is off but ignoreGlobalTelemetryLevel=true', () => {
+      const bypassSettings = new CustomVSCodeSettings(NS, true);
+      ws.__setConfig('', 'telemetry.telemetryLevel', 'off');
+      ws.__setConfig(`${NS}.telemetry`, 'enabled', true);
+      expect(bypassSettings.isTelemetryEnabled()).toBe(true);
     });
 
     it('returns false when namespace key is not set (defaults to false)', () => {
@@ -215,6 +221,12 @@ describe('CustomVSCodeSettings', () => {
   describe('configSection getter', () => {
     it('returns "<namespace>.telemetry"', () => {
       expect(settings.configSection).toBe(`${NS}.telemetry`);
+    });
+  });
+
+  describe('constructor validation', () => {
+    it('throws when telemetryNamespace is an empty string', () => {
+      expect(() => new CustomVSCodeSettings('')).toThrow('telemetryNamespace must be a non-empty string');
     });
   });
 });

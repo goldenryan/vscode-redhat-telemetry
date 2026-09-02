@@ -131,4 +131,33 @@ describe('buildOptInMessage', () => {
     const msg = buildOptInMessage({ optInMessage: '' }, EXT_ID);
     expect(msg).toContain('Help Red Hat');
   });
+
+  it('handles a relative privacyStatementUrl without throwing', () => {
+    const msg = buildOptInMessage({ privacyStatementUrl: '/privacy' }, EXT_ID);
+    expect(msg).toContain('/privacy');
+    expect(msg).toContain(`from=${EXT_ID}`);
+  });
+
+  it('handles a malformed privacyStatementUrl without throwing', () => {
+    const msg = buildOptInMessage({ privacyStatementUrl: 'not a url' }, EXT_ID);
+    expect(msg).toContain('not a url');
+    expect(msg).toContain(`from=${EXT_ID}`);
+  });
+
+  it('appends from= with & when relative URL already has a query string', () => {
+    const msg = buildOptInMessage({ privacyStatementUrl: '/privacy?locale=en' }, EXT_ID);
+    expect(msg).toContain('/privacy?locale=en&from=');
+  });
+
+  it('throws when telemetryNamespace is set but optInMessage is absent', () => {
+    expect(() => buildOptInMessage({ telemetryNamespace: 'myext' }, EXT_ID)).toThrow(
+      'TelemetryOptions.optInMessage is required when telemetryNamespace is set',
+    );
+  });
+
+  it('does not throw when both telemetryNamespace and optInMessage are provided', () => {
+    expect(() =>
+      buildOptInMessage({ telemetryNamespace: 'myext', optInMessage: 'Custom text.' }, EXT_ID),
+    ).not.toThrow();
+  });
 });

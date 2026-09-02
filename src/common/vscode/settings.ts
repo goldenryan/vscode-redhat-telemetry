@@ -45,7 +45,13 @@ export class VSCodeSettings implements TelemetrySettings {
 export class CustomVSCodeSettings implements TelemetrySettings {
   private readonly configKey: string;
 
-  constructor(private readonly telemetryNamespace: string) {
+  constructor(
+    private readonly telemetryNamespace: string,
+    private readonly ignoreGlobalTelemetryLevel = false,
+  ) {
+    if (!telemetryNamespace) {
+      throw new Error('telemetryNamespace must be a non-empty string');
+    }
     this.configKey = `${telemetryNamespace}.telemetry.enabled`;
   }
 
@@ -55,6 +61,9 @@ export class CustomVSCodeSettings implements TelemetrySettings {
   }
 
   isTelemetryEnabled(): boolean {
+    if (!this.ignoreGlobalTelemetryLevel && this.getTelemetryLevel() === 'off') {
+      return false;
+    }
     return workspace.getConfiguration(this.configSection).get<boolean>('enabled', false);
   }
 
