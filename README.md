@@ -206,7 +206,7 @@ export async function activate(context: ExtensionContext) {
     // Required: the namespace prefix. Reads/writes `myext.telemetry.enabled`.
     telemetryNamespace: 'myext',
 
-    // Optional: override the opt-in dialog message.
+    // Required when telemetryNamespace is set — the default message uses Red Hat branding.
     optInMessage: 'Help us improve this extension by sending anonymous usage data.',
 
     // Optional: override the privacy-statement URL shown in the dialog.
@@ -229,7 +229,8 @@ export async function activate(context: ExtensionContext) {
 | `telemetryNamespace` provided | Library reads/writes `<namespace>.telemetry.enabled`; `redhat.telemetry.enabled` is ignored entirely for this pipeline |
 | `telemetryNamespace` omitted | All existing behavior is unchanged — `redhat.telemetry.enabled` is used as before |
 | Opt-in dialog lock file | Stored as `<namespace>.optin.json` — independent from `redhat.optin.json` |
-| `optInMessage` omitted | Falls back to the default Red Hat opt-in message |
+| `optInMessage` omitted when `telemetryNamespace` is set | Throws — `optInMessage` is required to avoid Red Hat branding appearing in a third-party extension |
+| `optInMessage` omitted when `telemetryNamespace` is not set | Falls back to the default Red Hat opt-in message |
 | `privacyStatementUrl` / `optOutInstructionsUrl` omitted | Falls back to the Red Hat default URLs |
 
 ---
